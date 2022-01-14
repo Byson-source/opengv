@@ -27,7 +27,7 @@
 * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF     *
 * SUCH DAMAGE.                                                               *
 ******************************************************************************/
- 
+
 /* if you use MLPnP consider citing our paper:
 @INPROCEEDINGS {mlpnp2016,
 	title={MLPNP - A REAL-TIME MAXIMUM LIKELIHOOD SOLUTION TO THE PERSPECTIVE-N-POINT PROBLEM},
@@ -41,21 +41,18 @@
 29.06.2016 Steffen Urban
 */
 
-
-
 #include <opengv/absolute_pose/modules/mlpnp.hpp>
 #include <opengv/math/cayley.hpp>
 #include <opengv/math/rodrigues.hpp>
 #include <Eigen/Sparse>
 #include <iostream>
 
-
 void opengv::absolute_pose::modules::mlpnp::mlpnp_residuals_and_jacs(
-	const Eigen::VectorXd& x, 
-	const points_t& pts,
-	const std::vector<Eigen::MatrixXd>& nullspaces,
-	Eigen::VectorXd& r, 
-	Eigen::MatrixXd& fjac,
+	const Eigen::VectorXd &x,
+	const points_t &pts,
+	const std::vector<Eigen::MatrixXd> &nullspaces,
+	Eigen::VectorXd &r,
+	Eigen::MatrixXd &fjac,
 	bool getJacs)
 {
 	rodrigues_t w(x[0], x[1], x[2]);
@@ -69,18 +66,18 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_residuals_and_jacs(
 
 	for (int i = 0; i < pts.size(); ++i)
 	{
-		Eigen::Vector3d ptCam = R*pts[i] + T;
+		Eigen::Vector3d ptCam = R * pts[i] + T;
 		ptCam /= ptCam.norm();
 
-		r[ii] = nullspaces[i].col(0).transpose()*ptCam;
-		r[ii + 1] = nullspaces[i].col(1).transpose()*ptCam;
+		r[ii] = nullspaces[i].col(0).transpose() * ptCam;
+		r[ii + 1] = nullspaces[i].col(1).transpose() * ptCam;
 		if (getJacs)
 		{
 			// jacs
 			modules::mlpnp::mlpnpJacs(pts[i],
-				nullspaces[i].col(0), nullspaces[i].col(1),
-				w, T,
-				jacs);
+									  nullspaces[i].col(0), nullspaces[i].col(1),
+									  w, T,
+									  jacs);
 
 			// r
 			fjac(ii, 0) = jacs(0, 0);
@@ -98,17 +95,15 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_residuals_and_jacs(
 			fjac(ii + 1, 3) = jacs(1, 3);
 			fjac(ii + 1, 4) = jacs(1, 4);
 			fjac(ii + 1, 5) = jacs(1, 5);
-			
 		}
 		ii += 2;
 	}
 }
 
-
 void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
-	Eigen::VectorXd& x,
-	const points_t& pts,
-	const std::vector<Eigen::MatrixXd>& nullspaces,
+	Eigen::VectorXd &x,
+	const points_t &pts,
+	const std::vector<Eigen::MatrixXd> &nullspaces,
 	const Eigen::SparseMatrix<double> Kll,
 	bool use_cov)
 {
@@ -145,8 +140,8 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
 	while (it_cnt < maxIt && !stop)
 	{
 		mlpnp_residuals_and_jacs(x, pts, nullspaces,
-			r, Jac, true);
-		
+								 r, Jac, true);
+
 		if (use_cov)
 			JacTSKll = Jac.transpose() * Kll;
 		else
@@ -160,8 +155,7 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
 		// get system matrix
 		g = JacTSKll * r;
 
-
-		A += mu*eyeMat;
+		A += mu * eyeMat;
 		// solve
 		Eigen::LDLT<Eigen::MatrixXd> chol(A);
 		dx = chol.solve(g);
@@ -186,7 +180,7 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
 
 			rd.setZero();
 			mlpnp_residuals_and_jacs(xnew, pts, nullspaces,
-				rd, Jac, false);
+									 rd, Jac, false);
 
 			// levenberg marquardt
 			double epsP = 0.0;
@@ -204,9 +198,9 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
 			}
 
 			Eigen::VectorXd dS1 = dx;
-			Eigen::VectorXd dS2 = (mu*dS1 + g);
+			Eigen::VectorXd dS2 = (mu * dS1 + g);
 
-			dS = (dS1.transpose()*dS2);
+			dS = (dS1.transpose() * dS2);
 
 			double rho = (epsP - Sd) / dS;
 			if (rho > 0.0)
@@ -224,19 +218,19 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_lm(
 			}
 			else
 			{
-				mu = mu*nu;
+				mu = mu * nu;
 				nu = 2 * nu;
 			}
 		}
 		++it_cnt;
-	}//while
-	// result
+	} //while
+	  // result
 }
 
 void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
-	Eigen::VectorXd& x,
-	const points_t& pts,
-	const std::vector<Eigen::MatrixXd>& nullspaces,
+	Eigen::VectorXd &x,
+	const points_t &pts,
+	const std::vector<Eigen::MatrixXd> &nullspaces,
 	const Eigen::SparseMatrix<double> Kll,
 	bool use_cov)
 {
@@ -270,19 +264,19 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
 	// solve simple gradient descent
 	while (it_cnt < maxIt && !stop)
 	{
-		mlpnp_residuals_and_jacs(x, pts, 
-			nullspaces,
-			r, Jac, true);
-		
-		if (use_cov){
+		mlpnp_residuals_and_jacs(x, pts,
+								 nullspaces,
+								 r, Jac, true);
+
+		if (use_cov)
+		{
 			JacTSKll = Jac.transpose() * Kll;
-			std::cout<<"YES!!!"<<std::endl;
 		}
 		else
 			JacTSKll = Jac.transpose();
 
 		A = JacTSKll * Jac;
-		
+
 		// get system matrix
 		g = JacTSKll * r;
 
@@ -306,21 +300,21 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
 			x = x - dx;
 
 		++it_cnt;
-	}//while
-	std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
-	std::cout<<A.inverse()<<std::endl;
-	std::cout<<"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"<<std::endl;
+	} //while
+	std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
+	std::cout << A.inverse() << std::endl;
+	std::cout << "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!" << std::endl;
 	// result
 }
 
 void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
-	Eigen::VectorXd& x,
-	const points_t& pts,
-	const std::vector<Eigen::MatrixXd>& nullspaces,
+	Eigen::VectorXd &x,
+	const points_t &pts,
+	const std::vector<Eigen::MatrixXd> &nullspaces,
 	const Eigen::SparseMatrix<double> Kll,
 	// 適当で良い↓
-	Eigen::MatrixXd& Qxx,
-	Eigen::MatrixXd& Qldld,
+	Eigen::MatrixXd &Qxx,
+	Eigen::MatrixXd &Qldld,
 	bool use_cov)
 {
 	const int numObservations = pts.size();
@@ -331,7 +325,7 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
 	// =============
 	// set all matrices up
 	// =============
-	
+
 	Eigen::VectorXd r(2 * numObservations);
 	Eigen::VectorXd rd(2 * numObservations);
 	Eigen::MatrixXd Jac(2 * numObservations, numUnknowns);
@@ -354,12 +348,12 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
 	while (it_cnt < maxIt && !stop)
 	{
 		mlpnp_residuals_and_jacs(x, pts,
-			nullspaces,
-			r, Jac, true);
+								 nullspaces,
+								 r, Jac, true);
 
-		if (use_cov){
+		if (use_cov)
+		{
 			JacTSKll = Jac.transpose() * Kll;
-			std::cout<<"YES!!!"<<std::endl;
 		}
 		else
 			JacTSKll = Jac.transpose();
@@ -388,10 +382,8 @@ void opengv::absolute_pose::modules::mlpnp::mlpnp_gn(
 			x = x - dx;
 
 		++it_cnt;
-	}//while
+	} //while
 	// statistics
 	Qxx = A.inverse();
 	Qldld = Jac * Qxx * Jac.transpose();
-
-	
 }
