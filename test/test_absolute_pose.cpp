@@ -57,7 +57,7 @@ int main(int argc, char **argv)
   //set experiment parameters
   double noise = 0.0;
   double outlierFraction = 0.0;
-  size_t numberPoints = 100;
+  size_t numberPoints = 10;
 
   //create a random viewpoint pose
   translation_t position = generateRandomTranslation(2.0);
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   cov3_mat_t test_cov;
   cov3_mats_t emptyCovariances;
   // NOTE　特徴点の数だけ、分散を加味する
-  for (int i{0}; i < 100; ++i)
+  for (int i{0}; i < 10; ++i)
     emptyCovariances.push_back(test_cov.Identity() * 1.2);
   std::cout << test_cov.Identity() * 2 << std::endl;
 
@@ -85,7 +85,6 @@ int main(int argc, char **argv)
   generateRandom2D3DCorrespondences(
       position, rotation, camOffsets, camRotations, numberPoints, noise, outlierFraction,
       bearingVectors, points, camCorrespondences, gt);
-
   //print the experiment characteristics
   printExperimentCharacteristics(
       position, rotation, noise, outlierFraction);
